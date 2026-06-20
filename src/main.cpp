@@ -1,63 +1,122 @@
 #include<Arduino.h>
 
-const int ENA = 4;
-const int IN1 = 16;
-const int IN2 = 17;
-const int ENB = 18;
-const int IN3 = 19;
-const int IN4 = 21;
-const int TrigPin = 23;
-const int EchoPin = 22;
+const int ledPin = 4;
+const int buzzerPin = 16;
+const int buttonPin = 17;
+const int firePin = 33;
 
-void setup() {
-  Serial.begin(9600);
-  pinMode(ENA, OUTPUT);
-  pinMode(ENB, OUTPUT);
-  pinMode(IN1, OUTPUT);
-  pinMode(IN2, OUTPUT);
-  pinMode(IN3, OUTPUT);
-  pinMode(IN4, OUTPUT);
-  pinMode(TrigPin, OUTPUT);
-  pinMode(EchoPin, INPUT);
+unsigned long previousLed = 0;
+unsigned long previousBuzzer = 0;
+unsigned long previousFire = 0;
+unsigned long previousSerial = 0;
 
-  // digitalWrite(ENA, HIGH);
-  // digitalWrite(ENB, HIGH);
+unsigned long ledInterval = 0;
+unsigned long buzzerInterval = 500;
+unsigned long fireInterval = 100;
+unsigned long serialInterval = 1000;
 
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  digitalWrite(TrigPin, LOW);
+int fireValue = 0;
+bool ledState = HIGH;
+
+void fireSensorRead (){
+    fireValue = analogRead(firePin);
 }
 
+void blinkLed (){
+    ledState = !ledState;
+    digitalWrite(ledPin, ledState);
+}
+
+enum State {
+    NORMAL,
+    ALARM,
+    SILENT
+};
+
+State currentState = NORMAL;
+
+void updateState (){
+    switch (currentState)
+    {
+    case NORMAL:
+        if (fireValue <= 2000)
+        {
+            currentState = ALARM;
+        }
+        break;
+    
+    case ALARM:
+        if (digitalRead(buttonPin) == LOW)
+        {
+            currentState = SILENT;
+        }else if (fireValue > 2000)
+        {
+            currentState = NORMAL;
+        }
+        
+        break;
+
+    case SILENT:
+        if (fireValue > 2000)
+        {
+            currentState = NORMAL;
+        }
+        break;
+    }
+
+    }
+
+void runState (){
+    switch (currentState)
+    {
+    case NORMAL:
+        digitalWrite(buzzerPin, LOW);
+        ledInterval = 1000;
+        break;
+    
+    case ALARM:
+        digitalWrite(buzzerPin, HIGH);
+        ledInterval = 200;
+        break;
+
+    case SILENT:
+        digitalWrite(buzzerPin, LOW);
+        digitalWrite(ledPin, HIGH);
+        break;
+    }
+}
+
+void setup() {
+    Serial.begin(115200);
+    pinMode(ledPin, OUTPUT);
+    pinMode(buzzerPin, OUTPUT);
+    pinMode(buttonPin, INPUT_PULLUP);
+    pinMode(firePin, INPUT);
+}
 void loop() {
+    unsigned long currentMillis = millis();
 
-  
-  digitalWrite(IN1, HIGH);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, HIGH);
-  digitalWrite(IN4, LOW);
-  Serial.print("started");
+    if (currentMillis - previousFire >= fireInterval)
+    {
+        previousFire = currentMillis;
+        fireSensorRead();
+    }
 
-  delay(5000);
+    updateState();
 
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
-  Serial.print("stopped");
+    runState();
 
-  delay(5000);
-
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, HIGH);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, HIGH);
-
-  delay(5000);
-
-  digitalWrite(IN1, LOW);
-  digitalWrite(IN2, LOW);
-  digitalWrite(IN3, LOW);
-  digitalWrite(IN4, LOW);
+    if (currentMillis - previousLed >= ledInterval)
+    {
+        previousLed = currentMillis;
+        blinkLed();
+    }
+    
+    if (currentMillis - previousSerial >= serialInterval)
+    {
+        previousSerial = currentMillis;
+        Serial.print("The value is:");
+        Serial.println(fireValue);
+    }
+    
 }
