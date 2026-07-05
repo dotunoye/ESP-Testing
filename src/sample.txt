@@ -1,156 +1,43 @@
 #include<Arduino.h>
+#include <ESP32Servo.h>
 
-int echoPin = 4;
-int trigPin = 16;
-int whitePin = 17;
-int redPin = 5;
-int buzzerPin = 18;
-int buttonPin = 19;
+int xAxis = 32;
+int yAxis = 35;
+int SW = 33;
+int servoPin = 4;
 
-float distance = 0;
-bool whiteState = HIGH;
-bool redState = HIGH;
-bool buzzerState = HIGH;
+Servo myServo;
 
-unsigned long previousTrig = 0;
-unsigned long previousWhite = 0;
-unsigned long previousRed = 0;
-unsigned long previousBuzzer = 0;
-unsigned long previousSerial = 0;
-
-unsigned long trigInterval = 1;
-unsigned long whiteInterval = 1000;
-unsigned long redInterval = 200;
-unsigned long buzzerInterval = 500;
-unsigned long serialInterval = 500;
-
-enum State {
-    IDLE,
-    APPROACHING,
-    TOO_CLOSE
-};
-
-State currentState = IDLE;
-
-void updateState(){
-    switch (currentState)
-    {
-    case IDLE:
-        if (distance < 25)
-        {
-            currentState = APPROACHING;
-        }
-        break;   
-    case APPROACHING:
-        if (distance < 10)
-        {
-            currentState = TOO_CLOSE;
-        }else if (distance >= 25)
-        {
-            currentState = IDLE;
-            }
-        
-        break;
-    case TOO_CLOSE:
-        if (distance >= 25)
-        {
-            currentState = IDLE;
-        }else if (digitalRead(buttonPin) == HIGH)
-        {
-            currentState = IDLE;
-        }        
-    }
-}
-
-void runState (){
-    switch (currentState)
-    {
-    case IDLE:
-        digitalWrite(whitePin, HIGH);
-        digitalWrite(redPin, LOW);
-        digitalWrite(buzzerPin, LOW);
-        whiteInterval = 0;
-        redInterval = 0;
-        buzzerInterval = 0;
-        break;
-    
-    case APPROACHING:
-        whiteInterval = 500;
-        buzzerInterval = 1000;
-        digitalWrite(redPin, HIGH);
-        break;
-    case TOO_CLOSE:
-        digitalWrite(whitePin, LOW);
-        redInterval = 250;
-        buzzerInterval = 200;
-        break;
-    }
-
-}
-
-void redLight (){
-    redState = !redState;
-    digitalWrite(redPin, redState);
-}
-void whiteLight (){
-    whiteState = !whiteState;
-    digitalWrite(whitePin, whiteState);
-}
-void buzzerUpdate (){
-    buzzerState = !buzzerState;
-    digitalWrite(buzzerPin, buzzerState);
-}
-
-void setup() {
+void setup (){
     Serial.begin(115200);
-    pinMode(echoPin, INPUT);
-    pinMode(trigPin, OUTPUT);
-    pinMode(whitePin, OUTPUT);
-    pinMode(redPin, OUTPUT);
-    pinMode(buzzerPin, OUTPUT);
-    pinMode(buttonPin, INPUT_PULLUP);
+    pinMode(SW, INPUT_PULLUP);
+
+    myServo.attach(servoPin);
+    digitalWrite(2, HIGH);
 }
-void loop() {
-    unsigned long currentMillis = millis();
 
-    digitalWrite(trigPin, LOW);
-    delayMicroseconds(2);
-    digitalWrite(trigPin, HIGH);
-    delayMicroseconds(10);
-    digitalWrite(trigPin, LOW);
-    
-    long duration = pulseIn(echoPin, HIGH);
+void loop(){
 
-    distance = duration * 0.034/2;
+    int xValue = analogRead(xAxis);
+    int yValue = analogRead(yAxis);
 
-    updateState();
-    runState();
+    int buttonState = digitalRead(SW);
 
-    if (currentMillis - previousWhite >= whiteInterval)
+    int mapX = map(xValue, 0, 4095, 0, 180);
+    int mapY = map(yValue, 0, 4095, 180, 0);
+
+     Serial.print("X: "); Serial.print(mapX);
+    Serial.print(" | Y: "); Serial.print(mapY);
+    Serial.print(" | Button: "); Serial.println(buttonState);
+    myServo.write(mapX);
+    delay(50);
+    if (buttonState == LOW)
     {
-        previousWhite = currentMillis;
-        whiteLight();
-    }
-
-    if (currentMillis - previousRed >= redInterval)
+        digitalWrite(2, HIGH);
+    }else
     {
-        previousRed = currentMillis;
-        redLight();
+        digitalWrite(2, LOW);
     }
     
-    if (currentMillis - previousBuzzer >= buzzerInterval)
-    {
-        previousBuzzer = currentMillis;
-        buzzerUpdate();
-    }
     
-    if (currentMillis - previousSerial >= serialInterval)
-    {
-        previousSerial = currentMillis;
-        Serial.print("The distance is: ");
-        Serial.println(distance);
-    }
-    
-
-
 }

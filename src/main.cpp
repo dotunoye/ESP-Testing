@@ -1,43 +1,64 @@
 #include<Arduino.h>
-#include <ESP32Servo.h>
 
-int xAxis = 32;
-int yAxis = 35;
-int SW = 33;
-int servoPin = 4;
+int ledPin = 4;
+int buttonPin = 16;
+unsigned long interval = 500;
+unsigned long previousMillis = 0;
+bool ledState = false;
 
-Servo myServo;
+enum State {
+    ON,
+    OFF
+};
 
+State currentState = OFF;
+
+void assignState (){
+    switch (currentState)
+    {
+    case ON:
+        if (digitalRead(buttonPin) == LOW)
+        {
+            currentState = OFF;
+        }
+        break;
+    
+    case OFF:
+    if (digitalRead(buttonPin) == LOW)
+    {
+        currentState = ON;
+    }
+        break;
+    }
+}
+
+void executeState (unsigned long currentMilli){
+    switch (currentState)
+    {
+    case ON:
+        if (currentMilli - previousMillis >= interval)
+        {
+            previousMillis = currentMilli;
+            ledState = !ledState;
+            digitalWrite(ledPin, ledState);
+            delay(250);
+        }  
+        break;
+    
+    case OFF:
+        digitalWrite(ledPin, LOW);
+        delay(250);
+        break;
+    }
+}
 void setup (){
-    Serial.begin(115200);
-    pinMode(SW, INPUT_PULLUP);
-
-    myServo.attach(servoPin);
-    digitalWrite(2, HIGH);
+    pinMode(ledPin, OUTPUT);
+    pinMode(buttonPin, INPUT_PULLUP);
 }
 
 void loop(){
-
-    int xValue = analogRead(xAxis);
-    int yValue = analogRead(yAxis);
-
-    int buttonState = digitalRead(SW);
-
-    int mapX = map(xValue, 0, 4095, 0, 180);
-    int mapY = map(yValue, 0, 4095, 180, 0);
-
-     Serial.print("X: "); Serial.print(mapX);
-    Serial.print(" | Y: "); Serial.print(mapY);
-    Serial.print(" | Button: "); Serial.println(buttonState);
-    myServo.write(mapX);
-    delay(50);
-    if (buttonState == LOW)
-    {
-        digitalWrite(2, HIGH);
-    }else
-    {
-        digitalWrite(2, LOW);
-    }
-    
+    unsigned long currentMillis = millis();
+    assignState();
+    executeState(currentMillis);
     
 }
