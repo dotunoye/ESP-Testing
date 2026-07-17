@@ -1,29 +1,25 @@
 #include <Arduino.h>
 
-int ledPins[5] = {4, 16, 5, 18, 19};
-unsigned long previousMillis = 0;
-unsigned long interval = 300;
-int currentLed = 0;
+int sensorValues[] = {420, 310, 860, 790};
+int sensorCount = 4;
 
 void setup() {
     Serial.begin(115200);
+    int   highest = sensorValues[0];
+    int   sensorIndex = 0;
 
-    for (int i = 0; i < 5; i++)
+    for (int i = 1; i < sensorCount; i++)
     {
-        pinMode(ledPins[i], OUTPUT);
-    }
-}
-
-void loop() {
-    unsigned long currentMillis = millis();
-    if (currentMillis - previousMillis >= interval)
+        if (sensorValues[i] > highest)
         {
-            previousMillis = currentMillis;
-            for (int i = 0; i < 5; i++)
-            {
-                digitalWrite(ledPins[i], LOW);
-            }
-            digitalWrite(ledPins[currentLed], HIGH);
-           currentLed = (currentLed + 1) % 5;           
+            highest = sensorValues[i];
+            sensorIndex = i;
         }
+    }
+        Serial.print("The higest value and index is ");
+        Serial.print(highest);
+        Serial.print(" & ");
+        Serial.println(sensorIndex);
+}
+void loop() {
 }
