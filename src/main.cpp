@@ -1,25 +1,34 @@
 #include <Arduino.h>
 
-int sensorValues[] = {420, 310, 860, 790};
-int sensorCount = 4;
+int sensorValues[] = {420, 650, 710, 600};
+int thresholds[]   = {300, 700, 760, 550};
+bool alarms[4];
+String state;
 
 void setup() {
     Serial.begin(115200);
-    int   highest = sensorValues[0];
-    int   sensorIndex = 0;
-
-    for (int i = 1; i < sensorCount; i++)
+    
+    for (int i = 0; i < 4; i++)
     {
-        if (sensorValues[i] > highest)
+        if (sensorValues[i] > thresholds[i])
         {
-            highest = sensorValues[i];
-            sensorIndex = i;
+            alarms[i] =  true;
+        }else
+        {
+            alarms[i] = false;
         }
-    }
-        Serial.print("The higest value and index is ");
-        Serial.print(highest);
-        Serial.print(" & ");
-        Serial.println(sensorIndex);
+        if (alarms[i] == true)
+        {
+            state = "ALARM";
+        }else
+        {
+            state = "SAFE";
+        }
+        Serial.print("Sensor" );
+        Serial.print(i);
+        Serial.print(": ");
+        Serial.println(state);
+    }  
 }
 void loop() {
 }
