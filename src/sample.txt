@@ -1,508 +1,69 @@
-#include<Arduino.h>
-
-int whiteLed = 4;
-int redLed = 16;
-int rgbLed1 = 17; /*Blue*/
-int rgbLed2 = 5; /*Green*/
-int rgbLed3 = 18; /*Red*/
-int buttonWhite = 27;
-int buttonRed = 26;
-int buttonRgb = 25;
-bool redState = false;
-bool whiteState = false;
-
-int dynLED = 0;
-enum State{
-    ACTIVE_W,
-    ACTIVE_R,
-    ACTIVE_WBLINK,
-    ACTIVE_RBLINK,
-    INACTIVE,
-    GREEN,
-    BLUE,
-    RED,
-    RGBLINK,
-};
- 
-unsigned long redMillis = 0;
-unsigned long whiteMillis = 0;
-unsigned long redInterval = 250;
-unsigned long whiteInterval = 700;
-unsigned long rgbMillis = 0;
-unsigned long rgbInterval = 500;
-
-State currentState = INACTIVE;
-
-void assignState (){
-    switch (currentState)
-    {
-    case INACTIVE:
-        if (digitalRead(buttonWhite) == LOW)
-        {
-            currentState = ACTIVE_W;
-        }
-        if (digitalRead(buttonRed) == LOW)
-        {
-            currentState = ACTIVE_R;
-        }      
-        if (digitalRead(buttonRgb) == LOW)
-        {
-            currentState = RED;
-        }
-          
-        break;
-    case ACTIVE_W:
-        if (digitalRead(buttonWhite) == LOW)
-        {
-            currentState = ACTIVE_WBLINK;
-        }
-        break;
-    case ACTIVE_WBLINK:
-        if (digitalRead(buttonRed) == LOW)
-        {   
-            dynLED = redLed;
-            currentState = INACTIVE;
-        }
-        break;
-    case ACTIVE_R:
-        if (digitalRead(buttonRed) == LOW)
-        {
-            currentState = ACTIVE_RBLINK;
-        }
-        break;
-    case ACTIVE_RBLINK:
-        if (digitalRead(buttonWhite) == LOW)
-        {
-            dynLED = whiteLed;
-            currentState = INACTIVE;
-        }
-        break;
-    case RED:
-        if (digitalRead(buttonRgb) == LOW)
-        {
-            currentState = GREEN;
-        }
-        break;
-    case GREEN:
-        if (digitalRead(buttonRgb) == LOW)
-        {
-            currentState = BLUE;
-        }
-        break;
-    case BLUE:
-        if (digitalRead(buttonRgb) == LOW)
-        {
-            currentState = RGBLINK;
-        }
-        break;
-    case RGBLINK:
-        if (digitalRead(buttonRgb) == LOW)
-        {
-
-            currentState = INACTIVE;
-        }
-        break;
-    }
-}
-int colorNum = 0;
-void colorStep (){
-    if (colorNum < 3)
-    {
-        colorNum += 1;
-    }else
-    {
-        colorNum = 0;
-    }
-    
-}
-
-void updateRgb(){
-    if (colorNum == 0)
-    {
-        digitalWrite(rgbLed1, HIGH);
-        digitalWrite(rgbLed2, LOW);
-        digitalWrite(rgbLed3, LOW);
-    }
-    else if (colorNum == 1)
-    {
-        digitalWrite(rgbLed1, LOW);
-        digitalWrite(rgbLed2, HIGH);
-        digitalWrite(rgbLed3, LOW);
-    }
-    else if (colorNum == 2)
-    {
-        digitalWrite(rgbLed1, LOW);
-        digitalWrite(rgbLed2, LOW);
-        digitalWrite(rgbLed3, HIGH);
-    }
-}
-void stateFunction(int LED, unsigned long currentMilli){
-    switch (currentState)
-    {
-    case INACTIVE:
-        digitalWrite(LED, LOW);
-        break;
-    case ACTIVE_W:
-        digitalWrite(whiteLed, HIGH);
-        break;
-    case ACTIVE_R:
-        digitalWrite(redLed, HIGH);
-        break;
-    case ACTIVE_WBLINK:
-        if (currentMilli - whiteMillis >= whiteInterval)
-        {
-            whiteMillis = currentMilli;
-            whiteState = !whiteState;
-            digitalWrite(whiteLed, whiteState);
-        }
-        break; 
-    case ACTIVE_RBLINK:
-        if (currentMilli - redMillis >= redInterval)
-        {
-            redMillis = currentMilli;
-            redState = !redState;
-            digitalWrite(redLed, redState);
-        }
-        break;    
-    case GREEN:
-        digitalWrite(rgbLed2, HIGH);
-        break; 
-    case BLUE:
-        digitalWrite(rgbLed1, HIGH);
-        break; 
-    case RED:
-        digitalWrite(rgbLed3, HIGH);
-        break;    
-    case RGBLINK:
-        if (currentMilli - rgbMillis >= rgbInterval)
-        {
-            colorStep();
-            updateRgb();
-        }
-        break;
-    }
-}
-
-void setup (){
-    Serial.begin(115200);
-    pinMode(whiteLed, OUTPUT);
-    pinMode(redLed, OUTPUT);
-    pinMode(rgbLed1, OUTPUT);
-    pinMode(rgbLed2, OUTPUT);
-    pinMode(rgbLed3, OUTPUT);
-    pinMode(buttonRed, INPUT_PULLUP);
-    pinMode(buttonWhite, INPUT_PULLUP);
-    pinMode(buttonRgb, INPUT_PULLUP);
-}
-
-void loop(){
-    unsigned long currentMillis = millis();
-    assignState();
-    stateFunction(dynLED, currentMillis);
-}
-
-
-
-
-
-
 #include <Arduino.h>
 
-int whiteLed = 4;
-int redLed = 16;
-int rgbLed1 = 17; /*Blue*/
-int rgbLed2 = 5;  /*Green*/
-int rgbLed3 = 18; /*Red*/
+float batteryVoltages[] = {12.4, 11.3, 12.9, 10.5, 11.9, 12.0};
+bool needReplacement [6];
+int batteryCount = 6;
+String status[6];
+int lowCount = 0;
 
-int buttonWhite = 27;
-int buttonRed = 26;
-int buttonRgb = 25;
-
-bool redState = false;
-bool whiteState = false;
-
-enum State {
-    ACTIVE_W,
-    ACTIVE_R,
-    ACTIVE_WBLINK,
-    ACTIVE_RBLINK,
-    INACTIVE,
-    GREEN,
-    BLUE,
-    RED,
-    RGBLINK,
-};
-
-State currentState = INACTIVE;
-
-unsigned long redMillis = 0;
-unsigned long whiteMillis = 0;
-unsigned long redInterval = 250;
-unsigned long whiteInterval = 700;
-unsigned long rgbMillis = 0;
-unsigned long rgbInterval = 500;
-
-int colorNum = 0;
-
-// Variables to track the PREVIOUS button state (for Edge Detection)
-bool lastButtonWhiteState = HIGH;
-bool lastButtonRedState = HIGH;
-bool lastButtonRgbState = HIGH;
-
-// Helper function to turn off ALL LEDs before entering a new mode
-void clearAllLeds() {
-    digitalWrite(whiteLed, LOW);
-    digitalWrite(redLed, LOW);
-    digitalWrite(rgbLed1, LOW);
-    digitalWrite(rgbLed2, LOW);
-    digitalWrite(rgbLed3, LOW);
-}
-
-void assignState() {
-    // Read current physical button positions
-    bool currentWhiteReading = digitalRead(buttonWhite);
-    bool currentRedReading = digitalRead(buttonRed);
-    bool currentRgbReading = digitalRead(buttonRgb);
-
-    // EDGE DETECTION: True ONLY on the exact instant the button transitions from UNPRESSED (HIGH) to PRESSED (LOW)
-    bool whitePressed = (currentWhiteReading == LOW && lastButtonWhiteState == HIGH);
-    bool redPressed = (currentRedReading == LOW && lastButtonRedState == HIGH);
-    bool rgbPressed = (currentRgbReading == LOW && lastButtonRgbState == HIGH);
-
-    // Save the current readings for the next loop cycle comparison
-    // Small delay serves as a hardware debounce buffer
-    if (whitePressed || redPressed || rgbPressed) {
-        delay(50); 
-    }
-    lastButtonWhiteState = currentWhiteReading;
-    lastButtonRedState = currentRedReading;
-    lastButtonRgbState = currentRgbReading;
-
-    // State Machine Transitions
-    switch (currentState) {
-        case INACTIVE:
-            if (whitePressed) { clearAllLeds(); currentState = ACTIVE_W; }
-            else if (redPressed) { clearAllLeds(); currentState = ACTIVE_R; }      
-            else if (rgbPressed) { clearAllLeds(); currentState = RED; }
-            break;
-
-        case ACTIVE_W:
-            if (whitePressed) { currentState = ACTIVE_WBLINK; }
-            break;
-
-        case ACTIVE_WBLINK:
-            if (redPressed) { clearAllLeds(); currentState = INACTIVE; }
-            break;
-
-        case ACTIVE_R:
-            if (redPressed) { currentState = ACTIVE_RBLINK; }
-            break;
-
-        case ACTIVE_RBLINK:
-            if (whitePressed) { clearAllLeds(); currentState = INACTIVE; }
-            break;
-
-        case RED:
-            if (rgbPressed) { clearAllLeds(); currentState = GREEN; }
-            break;
-
-        case GREEN:
-            if (rgbPressed) { clearAllLeds(); currentState = BLUE; }
-            break;
-
-        case BLUE:
-            if (rgbPressed) { clearAllLeds(); currentState = RGBLINK; }
-            break;
-
-        case RGBLINK:
-            if (rgbPressed) { clearAllLeds(); currentState = INACTIVE; }
-            break;
-    }
-}
-
-void colorStep() {
-    colorNum += 1;
-    if (colorNum >= 3) {
-        colorNum = 0; // Wrap back around smoothly
-    }
-}
-
-void updateRgb() {
-    // Explicitly enforce that only ONE color is on at a time
-    if (colorNum == 0) {
-        digitalWrite(rgbLed1, HIGH); // Blue
-        digitalWrite(rgbLed2, LOW);
-        digitalWrite(rgbLed3, LOW);
-    }
-    else if (colorNum == 1) {
-        digitalWrite(rgbLed1, LOW);
-        digitalWrite(rgbLed2, HIGH); // Green
-        digitalWrite(rgbLed3, LOW);
-    }
-    else if (colorNum == 2) {
-        digitalWrite(rgbLed1, LOW);
-        digitalWrite(rgbLed2, LOW);
-        digitalWrite(rgbLed3, HIGH); // Red
-    }
-}
-
-void stateFunction(unsigned long currentMilli) {
-    switch (currentState) {
-        case INACTIVE:
-            clearAllLeds();
-            break;
-
-        case ACTIVE_W:
-            digitalWrite(whiteLed, HIGH);
-            break;
-
-        case ACTIVE_R:
-            digitalWrite(redLed, HIGH);
-            break;
-
-        case ACTIVE_WBLINK:
-            if (currentMilli - whiteMillis >= whiteInterval) {
-                whiteMillis = currentMilli;
-                whiteState = !whiteState;
-                digitalWrite(whiteLed, whiteState);
-            }
-            break; 
-
-        case ACTIVE_RBLINK:
-            if (currentMilli - redMillis >= redInterval) {
-                redMillis = currentMilli;
-                redState = !redState;
-                digitalWrite(redLed, redState);
-            }
-            break;    
-
-        case GREEN:
-            digitalWrite(rgbLed2, HIGH);
-            break; 
-
-        case BLUE:
-            digitalWrite(rgbLed1, HIGH);
-            break; 
-
-        case RED:
-            digitalWrite(rgbLed3, HIGH);
-            break;    
-
-        case RGBLINK:
-            if (currentMilli - rgbMillis >= rgbInterval) {
-                rgbMillis = currentMilli; // Reset the baseline timer!
-                colorStep();
-                updateRgb();
-            }
-            break;
-    }
-}
 
 void setup() {
     Serial.begin(115200);
-    pinMode(whiteLed, OUTPUT);
-    pinMode(redLed, OUTPUT);
-    pinMode(rgbLed1, OUTPUT);
-    pinMode(rgbLed2, OUTPUT);
-    pinMode(rgbLed3, OUTPUT);
-    
-    pinMode(buttonRed, INPUT_PULLUP);
-    pinMode(buttonWhite, INPUT_PULLUP);
-    pinMode(buttonRgb, INPUT_PULLUP);
-    
-    clearAllLeds();
-    Serial.println("--- 9-State Advanced Master Controller Online ---");
-}
+    float lowestVolt = batteryVoltages[0];
+    int batteryIndex = 0;
 
+    for (int i = 0; i < batteryCount; i++)
+    {
+        if (batteryVoltages[i] < 11.5)
+        {
+            status[i] = "LOW";
+            lowCount ++;
+        }else
+        {
+            status[i] = "OK";
+        }
+        Serial.print("Battery ");
+        Serial.print(i);
+        Serial.print(" : ");
+        Serial.println(status[i]); 
+        
+    }
+    Serial.print("Total LOW Batteries: ");
+    Serial.println(lowCount);
+
+    for (int i = 1; i < batteryCount; i++)
+    {
+        if (batteryVoltages[i] < lowestVolt)
+        {
+            lowestVolt = batteryVoltages[i];
+            batteryIndex = i;
+        }
+    }
+        Serial.print("Lowest Voltage: ");
+        Serial.println(lowestVolt);
+        Serial.print("Battery Index: ");
+        Serial.println(batteryIndex); 
+    
+        for (int i = 0; i < batteryCount; i++)
+        {
+            needReplacement[i] = batteryVoltages[i] < 11.5;
+
+           if (needReplacement[i])
+           {                  
+            Serial.print("Battery ");
+            Serial.print(i);
+            Serial.print(" : ");
+            Serial.println("REPLACE");
+        }else
+        {
+            Serial.print("Battery ");
+            Serial.print(i);
+            Serial.print(" : ");
+            Serial.println("KEEP");
+        }
+    
+    }
+}
 void loop() {
-    unsigned long currentMillis = millis();
-    assignState();
-    stateFunction(currentMillis);
+
 }
-
-
-
-
-
-Explanation
-
-Bro, this exact block of code is the **electronic gatekeeper** of your entire system. If you don't have this block, your finite state machine collapses into chaotic racing because the microchip processes time completely differently than a human thumb.
-
-Let’s break it down completely: **what it physically represents, how the math tracks time, and exactly where it intercepts your logic.**
-
----
-
-## 1. What It Does (The Core Mechanics)
-
-This block converts a long, messy, physical button hold into a **single, instantaneous microsecond event**.
-
-When you press a tactile push-button, your finger holds it down for maybe $150\text{ms}$. To an ESP32 running at $240\text{MHz}$, $150\text{ms}$ is a massive window of time—long enough for the `loop()` function to run **hundreds of thousands of times**.
-
-If your code only checked `if (digitalRead(pin) == LOW)`, the state machine would execute a transition on *every single loop cycle* while your finger is on the button. It would blurt through your states (`RED` $\rightarrow$ `GREEN` $\rightarrow$ `BLUE` $\rightarrow$ `RGBLINK`) in a flash.
-
-This block uses **Edge Detection** to isolate just the exact millisecond the button transitions from open to closed.
-
----
-
-## 2. Step-by-Step Code Walkthrough
-
-```cpp
-bool currentWhiteReading = digitalRead(buttonWhite);
-
-```
-
-* **The Action:** This takes a live snapshot of the physical voltage on the GPIO pin *at this exact instant*. Because you are using `INPUT_PULLUP`, the pin reads `HIGH` ($3.3\text{V}$) when left alone, and `LOW` ($0\text{V}$) when you physically press it down.
-
-```cpp
-bool whitePressed = (currentWhiteReading == LOW && lastButtonWhiteState == HIGH);
-
-```
-
-* **The Math:** This is a boolean logic gate. For `whitePressed` to become `TRUE`, two things must happen at the exact same time:
-1. The current reading must be `LOW` (the button is currently being held down).
-2. The *previous* loop's reading (`lastButtonWhiteState`) must have been `HIGH` (the button was open a split-second ago).
-
-
-* This logic is only true **once per press**—at the falling edge of the signal.
-
-```cpp
-if (whitePressed || redPressed || rgbPressed) {
-    delay(50); 
-}
-
-```
-
-* **The Debounce Protection:** Physical buttons are made of mechanical metal leaves. When you press them, they don't cleanly snap shut. They literally bounce against each other for a few milliseconds, causing the electrical signal to rapidly spike between `HIGH` and `LOW` (called **button chatter**).
-* This code says: "If *any* valid edge transition just happened, pause the CPU for $50\text{ms}$." This lets the physical metal leaves settle into a solid contact before the code can read them again.
-
-```cpp
-lastButtonWhiteState = currentWhiteReading;
-
-```
-
-* **The Memory:** Before the function ends, the code saves the current snapshot into a global memory variable. On the next loop cycle, this variable becomes the "previous" state.
-
----
-
-## 3. Where We Used It (The Logic Intersection)
-
-This block sits right at the very top of your `assignState()` function. It acts as the pre-processor for the `switch(currentState)` block right below it.
-
-Instead of putting raw `digitalRead()` functions inside your state logic, you use the filtered flags generated by this block (`whitePressed`, `redPressed`, `rgbPressed`).
-
-Look at how cleanly it hooks into your state logic:
-
-```cpp
-switch (currentState) {
-    case INACTIVE:
-        if (whitePressed) { ... currentState = ACTIVE_W; }
-        break;
-}
-
-```
-
-Because `whitePressed` flashes `TRUE` for only one single loop cycle, the machine drops into `case INACTIVE:`, moves the state forward to `ACTIVE_W`, and hits `break;`.
-
-On the very next loop cycle, even though your thumb is still holding that button down, `whitePressed` evaluates to `FALSE`. The machine passes safely through the loop without skipping over into the next state.
-
-Does tracking the variables across two consecutive loop cycles make sense now?
