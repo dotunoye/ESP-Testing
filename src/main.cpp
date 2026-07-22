@@ -1,89 +1,70 @@
 #include <Arduino.h>
 
-int distances[] = {15, 120, 35, 8, 200, 18, 75, 100};
-int totalSpaces = 8;
-bool occupied[8];
-int freeSpaces;
-float occupiedSpaces = 0;
-float closestDistance = distances[0];
-int carNum = distances[0];
+struct FireSensor
+{
+    int gpio;
+    int threshold;
+    bool status;
+    int uniqueID;
+    String location;
+};
 
+FireSensor sensors[3];
+
+int fireCount = 0;
 void setup() {
     Serial.begin(115200);
     
-    for (int i = 0; i < totalSpaces; i++)
-    {
-        if (distances[i] <= 20)
-        {
-            occupied[i] = true;
-            Serial.print("Space ");
-            Serial.print(i);
-            Serial.print(" : ");
-            Serial.println("true");
-            occupiedSpaces++;
-        } else{
-            occupied[i] = false;
-            Serial.print("Space ");
-            Serial.print(i);
-            Serial.print(" : ");
-            Serial.println("false");
-            freeSpaces++;
-        }
-    }
-            Serial.print("Occupied Space ");
-            Serial.print(" : ");
-            Serial.println(occupiedSpaces);
-            Serial.print("Free Space ");
-            Serial.print(" : ");
-            Serial.println(freeSpaces);
-            
+    sensors[0].gpio = 1;
+    sensors[0].location = "Top Right corner";
+    sensors[0].status = false;
+    sensors[0].threshold = 100;
+    sensors[0].uniqueID = 55;
 
-    for (int i = 1; i < totalSpaces; i++)
+    sensors[1].gpio = 2;
+    sensors[1].location = "Top left corner";
+    sensors[1].status = true;
+    sensors[1].threshold = 50;
+    sensors[1].uniqueID = 205;
+
+    sensors[2].gpio = 3;
+    sensors[2].location = "Bottom Right corner";
+    sensors[2].status = false;
+    sensors[2].threshold = 90;
+    sensors[2].uniqueID = 35;
+    
+    for (int i = 0; i < 3; i++)
     {
-        if (distances[i] < closestDistance)
-        {
-            closestDistance = distances[i];
-            carNum = i;
-        }
         
-    }
-        Serial.print("Closest Car ");
-        Serial.print(" : ");
-        Serial.println(closestDistance);
-    
-        Serial.print("Parking Space ");
-        Serial.print(" : ");
-        Serial.println(carNum);
-    
-        int percentage = (occupiedSpaces / totalSpaces) * 100;
-    
-    Serial.print("Parking Occupancy ");
-    Serial.print(" : ");
-    Serial.println(percentage);
-    
-    Serial.print("Free Spaces ");
-    Serial.print(" : ");
-    Serial.println(freeSpaces);
+        sensors[i];
+        Serial.print("===================SENSOR ");
+        Serial.print(i);
+        Serial.println("===================");
+        Serial.print("GPIO ");
+        Serial.println(sensors[i].gpio);
+        Serial.print("Threshold ");
+        Serial.println(sensors[i].threshold);
+        Serial.print("Status ");
+        if (sensors[i].status)
+        {
+            Serial.println("FIRE");
+            fireCount++;
+        }else
+        {
+            Serial.println("SAFE");
+        }
+        Serial.print("ID ");
+        Serial.println(sensors[i].uniqueID);
+        Serial.print("Location ");
+        Serial.println(sensors[i].location);
 
-    if (freeSpaces == 0)
-    {
-        Serial.print("Parking Lot ");
-        Serial.print(" : ");
-        Serial.println("FULL");
-    } else if (freeSpaces >= 1 && freeSpaces <= 5)
-    {
-        Serial.print("Parking Lot ");
-        Serial.print(" : ");
-        Serial.println("HALF FULL");
-    }else if (freeSpaces >= 6 && freeSpaces <= 8)
-    {
-        Serial.print("Parking Lot ");
-        Serial.print(" : ");
-        Serial.println("OCCUPIED");
     }
+
+        Serial.print("Total Active Fire Sensor ");
+        Serial.print(": ");
+        Serial.println(fireCount);
     
-    
+
 }
 void loop() {
-
 }
